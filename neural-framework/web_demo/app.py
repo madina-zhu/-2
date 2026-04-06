@@ -17,7 +17,7 @@ from data.transforms import Compose, Normalize, Flatten
 from core.layers import Sequential, Linear
 from core.activations import ReLU, Sigmoid, Tanh, Softmax
 from core.losses import MSELoss, CrossEntropyLoss
-from core.optimizers import SGD, MomentumSGD, Adam
+from core.optimizers import SGD, Momentum, Adam
 from core.optimizers import GradientClipping
 
 # Настройка страницы
@@ -60,11 +60,11 @@ with st.sidebar:
 
     # Оптимизатор
     st.subheader("Optimizer")
-    optimizer_name = st.selectbox("Optimizer", ["SGD", "Momentum SGD", "Adam"])
+    optimizer_name = st.selectbox("Optimizer", ["SGD", "Momentum", "Adam"])
 
     lr = st.number_input("Learning rate", min_value=0.0001, max_value=0.1, value=0.01, format="%.4f")
 
-    if optimizer_name == "Momentum SGD":
+    if optimizer_name == "Momentum":
         momentum = st.slider("Momentum", 0.0, 0.99, 0.9)
 
     use_clipping = st.checkbox("Use Gradient Clipping")
@@ -93,10 +93,10 @@ with col1:
         task = "classification"
         st.write(f"**Iris Dataset**: {len(dataset)} samples, 4 features, 3 classes")
 
-        # Показываем примеры
+        # Показываем примеры (исправлено: убран параметр columns)
         X_sample, y_sample = dataset[:5]
-        st.dataframe(np.hstack([X_sample, y_sample.reshape(-1, 1)]),
-                     columns=[f"Feature {i}" for i in range(4)] + ["Class"])
+        display_data = np.hstack([X_sample, y_sample.reshape(-1, 1)])
+        st.dataframe(display_data)
 
     elif dataset_name == "MNIST (Classification)":
         dataset, _ = load_mnist()
@@ -154,7 +154,7 @@ with col2:
     # Показываем архитектуру
     st.text(str(model))
 
-    total_params = sum(p.size for p in model.parameters())
+    total_params = sum(p.data.size for p in model.parameters())
     st.info(f"**Total parameters**: {total_params:,}")
 
 # Обучение
@@ -176,11 +176,11 @@ if train_button:
     else:
         loss_fn = MSELoss()
 
-    # Optimizer
+    # Optimizer (исправлено: Momentum вместо MomentumSGD)
     if optimizer_name == "SGD":
         optimizer = SGD(model.parameters(), lr=lr)
-    elif optimizer_name == "Momentum SGD":
-        optimizer = MomentumSGD(model.parameters(), lr=lr, momentum=momentum)
+    elif optimizer_name == "Momentum":
+        optimizer = Momentum(model.parameters(), lr=lr, momentum=momentum)
     else:  # Adam
         optimizer = Adam(model.parameters(), lr=lr)
 
